@@ -4,11 +4,11 @@ import { localize } from "../lib/i18n";
 export function Footer() {
   const footerLinks = [
     {
-      text: 'GitHub',
-      href: 'https://github.com/GaSeHhu/GaSeHhu',
+      text: localize('home'),
+      href: 'https://gasehhu.github.io/',
     },
     {
-      text: localize('about'),
+      text: 'GitHub',
       href: 'https://github.com/GaSeHhu/GaSeHhu',
     },
     {
@@ -70,7 +70,7 @@ export function Footer() {
         <Typography variant="body2" color="text.secondary" align="center" sx={{
           fontSize: 10,
         }}>
-          © 2023 under the terms of the MIT license.
+          © 2023 under the terms of the <Link underline="none" href="https://github.com/GaSeHhu/GaSeHhu/blob/master/LICENSE" target="_blank" rel="noopener">MIT license</Link>.
         </Typography>
       </Container>
     </Box>

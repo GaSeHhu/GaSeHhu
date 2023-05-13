@@ -40,7 +40,7 @@ export type StringId =
   | 'server'
   | 'poweredBy'
   | 'noMessages'
-  | 'about'
+  | 'home'
   | 'issues'
 ;
 
@@ -167,11 +167,11 @@ const localization: {[key in StringId]: {[key in Locale]: string | StringProduce
     'zh': () => localization.noMessages['zh-CN'] as string,
     'zh-CN': '没有消息',
   },
-  about: {
-    'en': () => localization.about['en-US'] as string,
-    'en-US': 'About',
-    'zh': () => localization.about['zh-CN'] as string,
-    'zh-CN': '关于',
+  home: {
+    'en': () => localization.home['en-US'] as string,
+    'en-US': 'Home',
+    'zh': () => localization.home['zh-CN'] as string,
+    'zh-CN': '主页',
   },
   issues: {
     'en': () => localization.issues['en-US'] as string,

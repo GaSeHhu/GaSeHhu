@@ -528,8 +528,6 @@ function ChatRoom(props: {
         position: 'fixed',
         height: '100%',
         overflow: 'scroll',
-        // '-ms-overflow-style': 'none',
-        // 'scrollbar-width': 'none',
         '::-webkit-scrollbar': { 
           display: 'none',
         },
