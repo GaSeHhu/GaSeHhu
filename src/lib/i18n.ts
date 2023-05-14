@@ -2,9 +2,7 @@ import { getQueryParam } from "./common";
 
 export enum Locale {
   EN = 'en',
-  EN_US = 'en-US',
   ZH = 'zh',
-  ZH_CN = 'zh-CN',
 }
 
 const getLocale = (lang: string): Locale | null => {
@@ -19,7 +17,7 @@ const getLocale = (lang: string): Locale | null => {
   return null;
 }
 
-export type StringId =
+type SimpleStringId =
   | '.'
   | 'gasehhu'
   | 'host'
@@ -42,150 +40,151 @@ export type StringId =
   | 'noMessages'
   | 'home'
   | 'issues'
+  | 'roomDismissed'
+  | 'hostMayHaveLeft'
+  | 'refreshPage'
 ;
 
-type StringProducer = () => string;
+type ComplexStringIdTypes = {
+  serverConnectionFailureAfterRetry: (retries: number) => string;
+  hostConnectionFailureAfterRetry: (retries: number) => string;
+  serverConnectingAfterRetries: (retries: number, reconnecting: boolean) => string;
+  hostConnectingAfterRetries: (retries: number, reconnecting: boolean) => string;
+}
 
-const localization: {[key in StringId]: {[key in Locale]: string | StringProducer}} = {
+type ComplexStringId = keyof ComplexStringIdTypes;
+
+export type StringId = SimpleStringId | ComplexStringId;
+
+type SimpleStringMappings = {[key in SimpleStringId]: {[key in Locale]: string}};
+type ComplexStringMappings = {[id in ComplexStringId]: {[l in Locale]: ComplexStringIdTypes[id]}};
+type AllStringMappings = SimpleStringMappings & ComplexStringMappings;
+
+const localizedStrings: AllStringMappings = {
   '.': {
-    'en': () => localization['.']['en-US'] as string,
-    'en-US': '.',
-    'zh': () => localization['.']['zh-CN'] as string,
-    'zh-CN': '。',
+    'en': '.',
+    'zh': '。',
   },
   gasehhu: {
-    'en': () => localization.gasehhu['en-US'] as string,
-    'en-US': 'Ga-Se-Hhu',
-    'zh': () => localization.gasehhu['zh-CN'] as string,
-    'zh-CN': '茄山河',
+    'en': 'Ga-Se-Hhu',
+    'zh': '茄山河',
   },
   host: {
-    'en': () => localization.host['en-US'] as string,
-    'en-US': 'host',
-    'zh': () => localization.host['zh-CN'] as string,
-    'zh-CN': '创建',
+    'en': 'host',
+    'zh': '创建',
   },
   hostARoom: {
-    'en': () => localization.hostARoom['en-US'] as string,
-    'en-US': 'Host a Room',
-    'zh': () => localization.hostARoom['zh-CN'] as string,
-    'zh-CN': '创建房间',
+    'en': 'Host a Room',
+    'zh': '创建房间',
   },
   join: {
-    'en': () => localization.join['en-US'] as string,
-    'en-US': 'join',
-    'zh': () => localization.join['zh-CN'] as string,
-    'zh-CN': '加入',
+    'en': 'join',
+    'zh': '加入',
   },
   joinARoom: {
-    'en': () => localization.joinARoom['en-US'] as string,
-    'en-US': 'Join a Room',
-    'zh': () => localization.joinARoom['zh-CN'] as string,
-    'zh-CN': '加入房间',
+    'en': 'Join a Room',
+    'zh': '加入房间',
   },
   regenerateAvatar: {
-    'en': () => localization.regenerateAvatar['en-US'] as string,
-    'en-US': 'regenerate avatar',
-    'zh': () => localization.regenerateAvatar['zh-CN'] as string,
-    'zh-CN': '重新生成头像',
+    'en': 'regenerate avatar',
+    'zh': '重新生成头像',
   },
   roomId: {
-    'en': () => localization.roomId['en-US'] as string,
-    'en-US': 'Room ID',
-    'zh': () => localization.roomId['zh-CN'] as string,
-    'zh-CN': '房间号',
+    'en': 'Room ID',
+    'zh': '房间号',
   },
   room: {
-    'en': () => localization.room['en-US'] as string,
-    'en-US': 'Room',
-    'zh': () => localization.room['zh-CN'] as string,
-    'zh-CN': '房间',
+    'en': 'Room',
+    'zh': '房间',
   },
   members: {
-    'en': () => localization.members['en-US'] as string,
-    'en-US': 'Members',
-    'zh': () => localization.members['zh-CN'] as string,
-    'zh-CN': '成员',
+    'en': 'Members',
+    'zh': '成员',
   },
   yourNickname: {
-    'en': () => localization.yourNickname['en-US'] as string,
-    'en-US': 'Your Nickname',
-    'zh': () => localization.yourNickname['zh-CN'] as string,
-    'zh-CN': '你的昵称',
+    'en': 'Your Nickname',
+    'zh': '你的昵称',
   },
   joined: {
-    'en': () => localization.joined['en-US'] as string,
-    'en-US': 'joined',
-    'zh': () => localization.joined['zh-CN'] as string,
-    'zh-CN': '加入了',
+    'en': 'joined',
+    'zh': '加入了',
   },
   left: {
-    'en': () => localization.left['en-US'] as string,
-    'en-US': 'left',
-    'zh': () => localization.left['zh-CN'] as string,
-    'zh-CN': '离开了',
+    'en': 'left',
+    'zh': '离开了',
+  },
+  roomDismissed: {
+    'en': 'The room has been dismissed by the host',
+    'zh': '房间已被房主关闭',
   },
   sharedTheLink: {
-    'en': () => localization.sharedTheLink['en-US'] as string,
-    'en-US': 'Share the Link',
-    'zh': () => localization.sharedTheLink['zh-CN'] as string,
-    'zh-CN': '分享链接',
+    'en': 'Share the Link',
+    'zh': '分享链接',
   },
   copied: {
-    'en': () => localization.copied['en-US'] as string,
-    'en-US': 'copied',
-    'zh': () => localization.copied['zh-CN'] as string,
-    'zh-CN': '复制成功',
+    'en': 'copied',
+    'zh': '复制成功',
   },
   messageBoxPlaceholder: {
-    'en': () => localization.messageBoxPlaceholder['en-US'] as string,
-    'en-US': 'Type something',
-    'zh': () => localization.messageBoxPlaceholder['zh-CN'] as string,
-    'zh-CN': '请输入...',
+    'en': 'Type something',
+    'zh': '请输入...',
   },
   advancedOptions: {
-    'en': () => localization.advancedOptions['en-US'] as string,
-    'en-US': 'Advanced Options',
-    'zh': () => localization.advancedOptions['zh-CN'] as string,
-    'zh-CN': '高级选项',
+    'en': 'Advanced Options',
+    'zh': '高级选项',
   },
   server: {
-    'en': () => localization.server['en-US'] as string,
-    'en-US': 'Server',
-    'zh': () => localization.server['zh-CN'] as string,
-    'zh-CN': '服务器',
+    'en': 'Server',
+    'zh': '服务器',
   },
   poweredBy: {
-    'en': () => localization.poweredBy['en-US'] as string,
-    'en-US': 'powered by',
-    'zh': () => localization.poweredBy['zh-CN'] as string,
-    'zh-CN': '使用',
+    'en': 'powered by',
+    'zh': '使用',
   },
   noMessages: {
-    'en': () => localization.noMessages['en-US'] as string,
-    'en-US': 'No Messages',
-    'zh': () => localization.noMessages['zh-CN'] as string,
-    'zh-CN': '没有消息',
+    'en': 'No Messages',
+    'zh': '没有消息',
   },
   home: {
-    'en': () => localization.home['en-US'] as string,
-    'en-US': 'Home',
-    'zh': () => localization.home['zh-CN'] as string,
-    'zh-CN': '主页',
+    'en': 'Home',
+    'zh': '主页',
   },
   issues: {
-    'en': () => localization.issues['en-US'] as string,
-    'en-US': 'Issues',
-    'zh': () => localization.issues['zh-CN'] as string,
-    'zh-CN': '问题',
+    'en': 'Issues',
+    'zh': '问题',
+  },
+  serverConnectionFailureAfterRetry: {
+    'en': (retries) => `Failed to connect to the server after ${retries} retries.`,
+    'zh': (retries) => `连接服务器失败（第${retries}次重试）`,
+  },
+  hostConnectionFailureAfterRetry: {
+    'en': (retries) => `Failed to connect to the host after ${retries} retries.`,
+    'zh': (retries) => `连接房间失败（第${retries}次重试）`,
+  },
+  hostMayHaveLeft: {
+    'en': 'The host may have left',
+    'zh': '房间可能已经关闭'
+  },
+  serverConnectingAfterRetries: {
+    'en': (retries, reconnecting) => `${reconnecting ? 'Reconnecting' : 'Connecting'} to the server${retries <= 1 ? '' : ` (retried ${retries} times)`}`,
+    'zh': (retries, reconnecting) => `正在${reconnecting ? '重新' : ''}连接服务器${retries <= 1 ? '' : `（第${retries} 次重试）`}`,
+  },
+  hostConnectingAfterRetries: {
+    'en': (retries, reconnecting) => `${reconnecting ? 'Reconnecting' : 'Connecting'} to the server${retries <= 1 ? '' : ` (retried ${retries} times)`}`,
+    'zh': (retries, reconnecting) => `正在${reconnecting ? '重新' : ''}连接房间${retries <= 1 ? '' : `（第${retries} 次重试）`}`,
+  },
+  refreshPage: {
+    'en': 'refresh the page',
+    'zh': '刷新页面',
   },
 };
 
-export function localize(stringId: StringId, locale?: Locale): string {
+export function localize(stringId: SimpleStringId, locale?: Locale): string {
   const localeChosen = locale ?? getLocale(getQueryParam('lang') ?? navigator.language) ?? Locale.EN;
-  const localized = localization[stringId][localeChosen];
-  if (typeof localized === 'string') {
-    return localized;
-  }
-  return localized();
+  return localizedStrings[stringId][localeChosen];
 };
+
+export function localizeFn<T extends ComplexStringId>(stringId: T, locale?: Locale): ComplexStringIdTypes[T] {
+  const localeChosen = locale ?? getLocale(getQueryParam('lang') ?? navigator.language) ?? Locale.EN;
+  return localizedStrings[stringId][localeChosen] as ComplexStringIdTypes[T];
+}

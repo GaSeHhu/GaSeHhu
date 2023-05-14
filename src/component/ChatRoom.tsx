@@ -8,11 +8,13 @@ import Sidebar from './chatroom/Sidebar';
 import MessageTextbox from './chatroom/MessageTextbox';
 import MessagePane from './chatroom/MessagePane';
 import LoadingProgress from './LoadingProgress';
+import { localize, localizeFn } from '../lib/i18n';
 
 interface ParticipantNotCreated {
   loading: true;
   ready: false;
   reconnecting: false;
+  dismissed: false;
   participant: null;
 }
 
@@ -20,6 +22,7 @@ interface ParticipantNotReady {
   loading: false;
   ready: false;
   reconnecting: false;
+  dismissed: false;
   participant: Participant;
 }
 
@@ -27,6 +30,7 @@ interface ParticipantReady {
   loading: false;
   ready: true;
   reconnecting: false;
+  dismissed: false;
   participant: Participant;
 }
 
@@ -34,10 +38,19 @@ interface ParticipantReconnecting {
   loading: boolean;
   ready: boolean;
   reconnecting: true;
+  dismissed: false;
   participant: Participant;
 }
 
-type ParticipantState = ParticipantNotCreated | ParticipantNotReady | ParticipantReady | ParticipantReconnecting;
+interface RoomDismissed {
+  loading: false;
+  ready: true;
+  reconnecting: false;
+  dismissed: true;
+  participant: null;
+}
+
+type ParticipantState = ParticipantNotCreated | ParticipantNotReady | ParticipantReady | ParticipantReconnecting | RoomDismissed;
 
 function ChatRoom(props: {
   room: Room;
@@ -48,6 +61,7 @@ function ChatRoom(props: {
     loading: true,
     ready: false,
     reconnecting: false,
+    dismissed: false,
     participant: null,
   });
   const {
@@ -62,6 +76,7 @@ function ChatRoom(props: {
       loading: false,
       ready: false,
       reconnecting: false,
+      dismissed: false,
       participant: participant,
     });
   };
@@ -71,19 +86,38 @@ function ChatRoom(props: {
       loading: false,
       ready: true,
       reconnecting: false,
+      dismissed: false,
       participant: participant,
     });
   };
+  const handleRoomDismissed = (participant: Participant) => {
+    setParticipantState({
+      loading: false,
+      ready: true,
+      reconnecting: false,
+      dismissed: true,
+      participant: null,
+    });
+  };
   const reconnect = (participant: Participant) => {
+    if (participantState.dismissed) {
+      return;
+    }
     incrementRetries();
-    setParticipantState((prev) => ({
-      loading: prev.loading,
-      ready: prev.ready,
-      reconnecting: true,
-      participant: participant,
-    }));
+    setParticipantState((prev) => {
+      if (prev.dismissed) {
+        return prev;
+      }
+      return {
+        loading: prev.loading,
+        ready: prev.ready,
+        reconnecting: true,
+        dismissed: false,
+        participant: participant,
+      }
+    });
     setTimeout(() => {
-      participant.reconnect();
+      participantState.participant?.reconnect();
     }, retries * 1000);
   };
 
@@ -105,7 +139,7 @@ function ChatRoom(props: {
   });
 
   useEffect(() => {
-    if (!participantState.loading || participantState.ready || participantState.participant) {
+    if (participantState.dismissed || !participantState.loading || participantState.ready || participantState.participant) {
       return;
     }
     let hostOrGuest: Participant;
@@ -126,7 +160,12 @@ function ChatRoom(props: {
       });
     }
     hostOrGuest.on('ready', () => handleParticipantReady(hostOrGuest));
-    hostOrGuest.on('disconnected', () => reconnect(hostOrGuest));
+    hostOrGuest.on('dismissed', () => {
+      handleRoomDismissed(hostOrGuest);
+    });
+    hostOrGuest.on('disconnected', () => {
+      reconnect(hostOrGuest);
+    });
 
     hostOrGuest.on('text', appendMessage);
     hostOrGuest.on('picture', appendMessage);
@@ -135,7 +174,6 @@ function ChatRoom(props: {
     hostOrGuest.on('left', appendMessage);
     hostOrGuest.on('members', message => {
       setMembers(message.members);
-      appendMessage(message);
     });
     handleParticipantCreated(hostOrGuest);
   }, [
@@ -144,6 +182,7 @@ function ChatRoom(props: {
     props.user.userId,
     participantState.loading,
     participantState.ready,
+    participantState.dismissed,
     participantState.participant,
   ]);
 
@@ -156,34 +195,31 @@ function ChatRoom(props: {
 
   if (participantState.loading || !participantState.ready) {
     const loadingMessage = ((): React.ReactNode => {
-      // TODO localize
-      const connecting = participantState.reconnecting ? 'Reconnecting' : 'Connecting';
-      const triedHowManyTimes = retries <= 1 ? '' : ` (retried ${retries} times)`;
       if (participantState.loading && !participantState.ready) {
-        if (retries >= 5) {
-          return (
-            <>
-              {`Failed to connect to the server after ${retries} retries.`}
-              <br/>
-              {'('}<Link href="#" underline="none" onClick={() => {window.location.reload()}}>refresh the page</Link>{')'}
-            </>
-          );
-        }
-        return `${connecting} to the server${triedHowManyTimes} ...`;
-      }
-      if (!participantState.ready) {
         if (retries >= 3) {
           return (
             <>
-              {`Failed to connect to the host after ${retries} retries.`}
+              {localizeFn('serverConnectionFailureAfterRetry')(retries)}
               <br/>
-              {'The host may have left.'}
-              <br/>
-              {'('}<Link href="#" underline="none" onClick={() => {window.location.reload()}}>refresh the page</Link>{')'}
+              {'('}<Link href="#" underline="none" onClick={() => {window.location.reload()}}>{localize('refreshPage')}</Link>{')'}
             </>
           );
         }
-        return `${connecting} to the host${triedHowManyTimes} ...`;
+        return localizeFn('serverConnectingAfterRetries')(retries, participantState.reconnecting);
+      }
+      if (!participantState.ready) {
+        if (retries >= 1) {
+          return (
+            <>
+              {localizeFn('hostConnectionFailureAfterRetry')(retries)}
+              <br/>
+              {localize('hostMayHaveLeft')}
+              <br/>
+              {'('}<Link href="#" underline="none" onClick={() => {window.location.reload()}}>{localize('refreshPage')}</Link>{')'}
+            </>
+          );
+        }
+        return localizeFn('hostConnectingAfterRetries')(retries, participantState.reconnecting);
       }
       // unknown
     })();
@@ -206,19 +242,19 @@ function ChatRoom(props: {
         },
       }}>
         <Grid item md={3}>
-          <Sidebar participant={participantState.participant} members={members}/>
+          <Sidebar members={members}/>
         </Grid>
       </Grid>
       <Grid container spacing={2}>
         <Grid item md={3} sm={0} xs={0}/>
         <Grid item md={9} sm={12} xs={12}>
-          <MessagePane participant={participantState.participant} members={members} messages={messages}/>
+          <MessagePane participant={participantState.participant ?? undefined} members={members} messages={messages} dismissed={participantState.dismissed}/>
         </Grid>
       </Grid>
       <Grid container spacing={2} style={{ position: 'fixed', bottom: 0 }}>
         <Grid item md={3} sm={0} xs={0}/>
         <Grid item md={9} sm={12} xs={12}>
-          <MessageTextbox participant={participantState.participant}/>
+          <MessageTextbox participant={participantState.participant ?? undefined} disabled={participantState.dismissed}/>
         </Grid>
       </Grid>
     </>

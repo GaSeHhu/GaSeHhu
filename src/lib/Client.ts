@@ -11,7 +11,8 @@ export type MessageType =
   | 'File'
   | 'MembersChanged'
   | 'MemberJoined'
-  | 'MemberLeft';
+  | 'MemberLeft'
+;
 
 export interface TypedMessage {
   type: MessageType;
@@ -82,6 +83,7 @@ type ParticipantEvents = {
   members: (members: MembersChangedMessage) => void;
   joined: (joined: MemberJoinedMessage) => void;
   left: (left: MemberLeftMessage) => void;
+  dismissed: () => void;
   disconnected: () => void;
 };
 
@@ -297,6 +299,9 @@ export class Host extends Participant {
   }
 
   destory() {
+    for (let guest of Object.values(this.guests)) {
+      guest.close();
+    }
     this.peer.disconnect();
     this.peer.destroy();
   }
@@ -396,6 +401,7 @@ export class Guest extends Participant {
     });
     hostConnection.on('close', () => {
       this.peer.disconnect();
+      this.emit('dismissed');
       this.hostConnection = undefined;
     });
   }

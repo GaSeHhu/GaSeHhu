@@ -6,6 +6,7 @@ import { localize } from '../../lib/i18n';
 
 export default function MessageTextbox(props: {
   participant?: Participant;
+  disabled?: boolean;
 }) {
   const [messageBoxValue, setMessageBoxValue] = useState<string>('');
   const sendMessage = () => {
@@ -52,11 +53,11 @@ export default function MessageTextbox(props: {
   return (
     <>
       <ButtonGroup variant="text" aria-label="text button group" sx={{ bgcolor: 'Background.paper' }}>
-        <IconButton color="primary" aria-label="upload picture" component="label">
+        <IconButton color="primary" aria-label="upload picture" component="label" disabled={props.disabled}>
           <input ref={pictureInputRef} hidden accept="image/*" type="file" onChange={sendPicture} />
           <InsertPhoto />
         </IconButton>
-        <IconButton color="primary" aria-label="upload file" component="label">
+        <IconButton color="primary" aria-label="upload file" component="label" disabled={props.disabled}>
           <input ref={fileAttachmentInputRef} hidden accept="*/*" type="file" onChange={sendFile} />
           <AttachFile />
         </IconButton>
@@ -70,7 +71,7 @@ export default function MessageTextbox(props: {
           autoFocus
           placeholder={localize('messageBoxPlaceholder')}
           inputProps={{ 'aria-label': 'Type something' }}
-          disabled={!Boolean(props.participant)}
+          disabled={props.disabled || !Boolean(props.participant)}
           value={messageBoxValue}
           onChange={e => setMessageBoxValue(e.target.value)}
           onKeyDown={e => {
@@ -84,7 +85,7 @@ export default function MessageTextbox(props: {
           color="secondary"
           sx={{ p: '10px' }}
           aria-label="directions"
-          disabled={!Boolean(props.participant)}
+          disabled={props.disabled || !Boolean(props.participant)}
           onClick={sendMessage}
         >
           <SendIcon />

@@ -8,12 +8,86 @@ import { DownloadFileAttachmentCard } from '../DownloadFileAttachmentCard';
 import Message from './Message';
 import { NoMessagePane } from './NoMessagePane';
 
+function TimeDividerItem(props: {
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <li>
+        <Typography
+          sx={{ mt: 0.5, ml: 2, textAlign: 'center' }}
+          color="text.secondary"
+          display="block"
+          variant="caption"
+        >
+          {props.children}
+        </Typography>
+      </li>
+      <Divider component="li" />
+    </>
+  );
+}
+
+function SimpleMessageItem(props: {
+  children?: React.ReactNode;
+}) {
+  return (
+    <li>
+      <Typography
+        sx={{ mt: 0.5, ml: 2, textAlign: 'center' }}
+        color="text.secondary"
+        display="block"
+        variant="caption"
+      >
+        {props.children}
+      </Typography>
+    </li>
+  );
+}
+
+function FileAttachmentMessageItem(props: {
+  fileAttachment: FileAttachmentMessage;
+  whom: User;
+  align: 'left' | 'right';
+}) {
+  return (
+    <Message
+      align={props.align}
+      whom={props.whom}
+    >
+      <DownloadFileAttachmentCard fileAttachment={props.fileAttachment} />
+    </Message>
+  );
+}
+
+function PictureMessageItem(props: {
+  picture: PictureMessage;
+  whom: User;
+  align: 'left' | 'right';
+}) {
+  return (
+    <Message
+      align={props.align}
+      whom={props.whom}
+    >
+      <Paper elevation={0} sx={{
+        display: 'inline-block',
+        p: 1,
+        border: '1px solid #f6f6f6',
+      }}>
+        <ZoomableImage maxWidth={400} maxHeight={480} alt='pic' src={props.picture.src} />
+      </Paper>
+    </Message>
+  )
+}
+
 export default function MessagePane(props: {
-  participant: Participant;
+  participant?: Participant;
   members: Array<User>;
   messages: Array<ChatMessage>;
+  dismissed?: boolean;
 }) {
-  if (props.messages.length === 0) {
+  if (!props.dismissed && props.messages.length === 0) {
     return <NoMessagePane />;
   }
   const membersPerUserId: { [key: string]: User; } = {};
@@ -32,17 +106,9 @@ export default function MessagePane(props: {
             const timeDividerValue = `${hours}:${minutes}`;
 
             const maybeTimeDivider = timeDividerValue !== lastTimeDividerValue ? [
-              <li key={`DividerValue-${i}`}>
-                <Typography
-                  sx={{ mt: 0.5, ml: 2, textAlign: 'center' }}
-                  color="text.secondary"
-                  display="block"
-                  variant="caption"
-                >
-                  {timeDividerValue}
-                </Typography>
-              </li>,
-              <Divider key={`Divider-${i}`} component="li" />
+              <TimeDividerItem key={`Divider-${i}`}>
+                {timeDividerValue}
+              </TimeDividerItem>
             ] : [];
             lastTimeDividerValue = timeDividerValue;
             return maybeTimeDivider;
@@ -67,71 +133,56 @@ export default function MessagePane(props: {
               const pictureMessage = message as PictureMessage;
               return [
                 ...maybeDivider(pictureMessage),
-                <Message
+                <PictureMessageItem
                   key={`Message-${i}`}
                   align={pictureMessage.onBehalfOf === props.participant?.user.userId ? 'right' : 'left'}
                   whom={{
                     userId: pictureMessage.onBehalfOf,
                     nickname: membersPerUserId[pictureMessage.onBehalfOf]?.nickname ?? pictureMessage.onBehalfOf,
                   }}
-                >
-                  <Paper elevation={0} sx={{
-                    display: 'inline-block',
-                    p: 1,
-                    border: '1px solid #f6f6f6',
-                  }}>
-                    <ZoomableImage maxWidth={400} maxHeight={480} alt='' src={pictureMessage.src} />
-                  </Paper>
-                </Message>
+                  picture={pictureMessage}
+                />
               ];
             case 'File':
               const fileAttachment = message as FileAttachmentMessage;
               return [
                 ...maybeDivider(fileAttachment),
-                <Message
+                <FileAttachmentMessageItem
                   key={`Message-${i}`}
                   align={fileAttachment.onBehalfOf === props.participant?.user.userId ? 'right' : 'left'}
                   whom={{
                     userId: fileAttachment.onBehalfOf,
                     nickname: membersPerUserId[fileAttachment.onBehalfOf]?.nickname ?? fileAttachment.onBehalfOf,
                   }}
-                >
-                  <DownloadFileAttachmentCard fileAttachment={fileAttachment} />
-                </Message>
+                  fileAttachment={fileAttachment}
+                />
               ];
             case 'MemberJoined':
               const joined = message as MemberJoinedMessage;
               return (
-                <li key={`MemberJoined-${i}`}>
-                  <Typography
-                    sx={{ mt: 0.5, ml: 2, textAlign: 'center' }}
-                    color="text.secondary"
-                    display="block"
-                    variant="caption"
-                  >
-                    {joined.member.nickname ?? joined.member.userId} {localize('joined')}{localize('.')}
-                  </Typography>
-                </li>
+                <SimpleMessageItem key={`MemberJoined-${i}`}>
+                  {joined.member.nickname ?? joined.member.userId} {localize('joined')}{localize('.')}
+                </SimpleMessageItem>
               );
             case 'MemberLeft':
               const left = message as MemberLeftMessage;
               return (
-                <li key={`MemberLeft-${i}`}>
-                  <Typography
-                    sx={{ mt: 0.5, ml: 2, textAlign: 'center' }}
-                    color="text.secondary"
-                    display="block"
-                    variant="caption"
-                  >
-                    {left.member.nickname ?? left.member.userId} {localize('left')}{localize('.')}
-                  </Typography>
-                </li>
+                <SimpleMessageItem key={`MemberLeft-${i}`}>
+                  {left.member.nickname ?? left.member.userId} {localize('left')}{localize('.')}
+                </SimpleMessageItem>
               );
             default:
               return [];
           }
         });
       })()}
+      {
+        props.dismissed && (
+          <SimpleMessageItem>
+            {localize('roomDismissed')}{localize('.')}
+          </SimpleMessageItem>
+        )
+      }
     </List>
   );
 }
