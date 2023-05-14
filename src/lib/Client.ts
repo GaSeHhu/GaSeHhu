@@ -98,9 +98,16 @@ const getPeerJsServerOptions = (room: Room) => {
   return PeerJsKnownServers[serverName] ?? DefaultPeerJsServer;
 }
 
+export interface ParticipantOptions {
+  room: Room;
+  user: User;
+  debug?: boolean;
+}
+
 export abstract class Participant extends EventEmitter<ParticipantEvents> {
 
   user: User;
+  options: ParticipantOptions;
 
   abstract sendText(text: string): void;
 
@@ -108,25 +115,31 @@ export abstract class Participant extends EventEmitter<ParticipantEvents> {
 
   abstract sendFile(file: File): void;
 
-  abstract disconnect(): void;
+  abstract reconnect(): void;
 
-  constructor(user: User) {
+  abstract destory(): void;
+
+  constructor(options: ParticipantOptions) {
     super();
-    this.user = user;
+    this.user = options.user;
+    this.options = options;
   }
 }
+
+const RetriableErrorTypes = new Set([
+  'disconnected',
+  'network',
+  'peer-unavailable',
+  'webrtc',
+]);
 
 export class Host extends Participant {
   peer: Peer;
   guests: {[key: string]: DataConnection} = {};
   othersNames: {[key: string]: string} = {};
 
-  constructor(options: {
-    room: Room;
-    user: User;
-    debug?: boolean;
-  }) {
-    super(options.user);
+  constructor(options: ParticipantOptions) {
+    super(options);
     this.peer = new Peer(options.user.userId, {
       debug: options.debug ? 3 : undefined,
       ...getPeerJsServerOptions(options.room),
@@ -279,7 +292,11 @@ export class Host extends Participant {
     });
   }
 
-  disconnect() {
+  reconnect() {
+    this.peer.reconnect();
+  }
+
+  destory() {
     this.peer.disconnect();
     this.peer.destroy();
   }
@@ -312,66 +329,74 @@ export class Guest extends Participant {
   peer: Peer;
   hostConnection: DataConnection | undefined;
 
-  constructor(options: {
-    user: User;
-    room: Room;
-    debug?: boolean;
-  }) {
-    super(options.user);
+  constructor(options: ParticipantOptions) {
+    super(options);
     this.peer = new Peer(options.user.userId, {
       debug: options.debug ? 3 : undefined,
       ...getPeerJsServerOptions(options.room),
     });
     this.peer.on('open', () => {
-      const hostConnection = this.peer.connect(options.room.roomId);
-      hostConnection.on('open', () => {
-        this.emit('ready');
-        const greetings: HelloMessage = {
-          type: 'Hello',
-          myNameIs: options.user.nickname,
-        };
-        this.hostConnection = hostConnection;
-        hostConnection.send(greetings);
-      });
-      hostConnection.on('data', (data) => {
-        const msgObj = data as any;
-        if (!msgObj || !msgObj.type) {
-          return;
-        }
-        switch (msgObj.type) {
-          case 'Text':
-            const textMessageReceived = msgObj as TextMessage;
-            this.emit('text', textMessageReceived);
-            break;
-          case 'Picture':
-            const pictureReceived = msgObj as PictureMessage;
-            this.emit('picture', pictureReceived);
-            break;
-          case 'File':
-            const fileReceived = msgObj as FileAttachmentMessage;
-            this.emit('file', fileReceived);
-            break;
-          case 'MembersChanged':
-            const membersChanged = msgObj as MembersChangedMessage;
-            this.emit('members', membersChanged);
-            break;
-          case 'MemberJoined':
-            const memberJoined = msgObj as MemberJoinedMessage;
-            this.emit('joined', memberJoined);
-            break;
-          case 'MembersLeft':
-            const memberLeft = msgObj as MemberLeftMessage;
-            this.emit('left', memberLeft);
-            break;
-        }
-      });
-      hostConnection.on('close', () => {
+      this.establishHostConnection();
+    });
+    this.peer.on('error', error => {
+      const errorType = (error as any).type;
+      if ('peer-unavailable' === errorType) {
+        // disconnect and retry if necessary
         this.peer.disconnect();
-      });
+      }
     });
     this.peer.on('disconnected', () => {
       this.emit('disconnected');
       this.hostConnection?.close();
+    });
+  }
+
+  private establishHostConnection() {
+    const hostConnection = this.peer.connect(this.options.room.roomId);
+    hostConnection.on('open', () => {
+      this.emit('ready');
+      const greetings: HelloMessage = {
+        type: 'Hello',
+        myNameIs: this.options.user.nickname,
+      };
+      this.hostConnection = hostConnection;
+      hostConnection.send(greetings);
+    });
+    hostConnection.on('data', (data) => {
+      const msgObj = data as any;
+      if (!msgObj || !msgObj.type) {
+        return;
+      }
+      switch (msgObj.type) {
+        case 'Text':
+          const textMessageReceived = msgObj as TextMessage;
+          this.emit('text', textMessageReceived);
+          break;
+        case 'Picture':
+          const pictureReceived = msgObj as PictureMessage;
+          this.emit('picture', pictureReceived);
+          break;
+        case 'File':
+          const fileReceived = msgObj as FileAttachmentMessage;
+          this.emit('file', fileReceived);
+          break;
+        case 'MembersChanged':
+          const membersChanged = msgObj as MembersChangedMessage;
+          this.emit('members', membersChanged);
+          break;
+        case 'MemberJoined':
+          const memberJoined = msgObj as MemberJoinedMessage;
+          this.emit('joined', memberJoined);
+          break;
+        case 'MembersLeft':
+          const memberLeft = msgObj as MemberLeftMessage;
+          this.emit('left', memberLeft);
+          break;
+      }
+    });
+    hostConnection.on('close', () => {
+      this.peer.disconnect();
+      this.hostConnection = undefined;
     });
   }
 
@@ -413,7 +438,11 @@ export class Guest extends Participant {
     });
   }
 
-  disconnect() {
+  reconnect() {
+    this.peer.reconnect();
+  }
+
+  destory() {
     this.peer.disconnect();
     this.peer.destroy();
   }

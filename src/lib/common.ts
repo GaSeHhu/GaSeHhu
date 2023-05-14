@@ -1,16 +1,30 @@
 import React, { useEffect, useRef, useState } from "react";
 
-export const useUnload = (fn: (event: BeforeUnloadEvent) => void) => {
-  const cb = useRef(fn); // init with fn, so that type checkers won't assume that current might be undefined
+export const useBeforeUnload = (fn: (event: BeforeUnloadEvent) => void) => {
+  const cb = useRef(fn);
 
   useEffect(() => {
     cb.current = fn;
   }, [fn]);
 
   useEffect(() => {
-    const onUnload = (event: BeforeUnloadEvent) => cb.current?.(event);
-    window.addEventListener('beforeunload', onUnload);
-    return () => window.removeEventListener('beforeunload', onUnload);
+    const onBeforeUnload = (event: BeforeUnloadEvent) => cb.current?.(event);
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, []);
+};
+
+export const useUnload = (fn: (event: Event) => void) => {
+  const cb = useRef(fn);
+
+  useEffect(() => {
+    cb.current = fn;
+  }, [fn]);
+
+  useEffect(() => {
+    const onUnload = (event: Event) => cb.current?.(event);
+    window.addEventListener('unload', onUnload);
+    return () => window.removeEventListener('unload', onUnload);
   }, []);
 };
 
@@ -33,4 +47,16 @@ export const useDebug = () => {
     return Boolean(getQueryParam('debug')) || getQueryParam('debug') === '';
   });
   return {debug, setDebug};
+};
+
+export const useIncrementer = () => {
+  const [counter, setCounter] = useState<number>(0);
+  const increment = (n?: number) => setCounter(prev => prev + (n ?? 1));
+  const reset = () => setCounter(0);
+
+  return {
+    increment,
+    reset,
+    counter,
+  };
 };
