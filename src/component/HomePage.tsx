@@ -55,7 +55,7 @@ function HostTab() {
   const countryCode = useCountryCodeContext();
 
   useEffect(() => {
-    if (user === null) {
+    if (!user) {
       setUser(new TemporaryUser());
     }
   }, [user, setUser]);
@@ -178,7 +178,7 @@ function GuestTab(props: {
   const toggleShowAdvancedOptions = () => setShowAdvancedOptions(prev => !prev);
 
   useEffect(() => {
-    if (user === null) {
+    if (!user) {
       setUser(new TemporaryUser());
     }
   }, [user, setUser]);

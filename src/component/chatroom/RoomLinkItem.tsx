@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { TextField, Typography, IconButton } from '@mui/material';
+import { TextField, Typography, IconButton, Button } from '@mui/material';
 import { Box } from '@mui/system';
 import { useTimeout } from '../../lib/common';
 import FireGTagEvents from '../../lib/GTagEvents';
@@ -8,7 +8,9 @@ import { localize } from '../../lib/i18n';
 import CollapsibleListItem from '../CollapsibleListItem';
 import { ContentCopy as ContentCopyIcon } from '@mui/icons-material';
 
-export default function RoomLinkItem() {
+export default function RoomLinkItem(props: {
+  onLeave?: () => void;
+}) {
   const [copied, setCopied] = useState<boolean>(false);
 
   useTimeout(() => {
@@ -57,6 +59,15 @@ export default function RoomLinkItem() {
             ),
           }}
         />
+        <Button
+          fullWidth
+          variant="outlined"
+          color="secondary"
+          onClick={props.onLeave}
+          sx={{ my: 1 }}
+        >
+          {localize('leave')}
+        </Button>
       </Box>
     </CollapsibleListItem>
   );

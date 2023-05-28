@@ -31,6 +31,7 @@ type SimpleStringId =
   | 'members'
   | 'joined'
   | 'left'
+  | 'leave'
   | 'sharedTheLink'
   | 'copied'
   | 'messageBoxPlaceholder'
@@ -112,6 +113,10 @@ const localizedStrings: AllStringMappings = {
   left: {
     'en': 'left',
     'zh': '离开了',
+  },
+  leave: {
+    'en': 'Leave',
+    'zh': '离开',
   },
   roomDismissed: {
     'en': 'The room has been dismissed by the host',

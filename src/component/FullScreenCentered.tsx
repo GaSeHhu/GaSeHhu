@@ -2,7 +2,7 @@ import React from 'react';
 import { Box } from '@mui/material';
 
 export default function FullScreenCentered(props: {
-  children: React.ReactNode[];
+  children?: React.ReactNode;
 }) {
   return (
     <Box sx={{

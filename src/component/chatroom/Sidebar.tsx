@@ -8,6 +8,7 @@ import RoomLinkItem from './RoomLinkItem';
 
 export default function Sidebar(props: {
   members: Array<User>;
+  onLeave?: () => void;
 }) {
   return (
     <>
@@ -16,7 +17,7 @@ export default function Sidebar(props: {
         maxWidth: 360,
         bgcolor: 'background.paper',
       }}>
-        <RoomLinkItem/>
+        <RoomLinkItem onLeave={props.onLeave}/>
         <MemberListItem members={props.members}/>
         <Footer/>
       </List>

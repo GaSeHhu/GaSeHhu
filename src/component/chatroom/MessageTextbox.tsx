@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { AttachFile, InsertPhoto, Send as SendIcon } from '@mui/icons-material';
+import { AttachFile, InsertPhoto as InsertPhotoIcon, Send as SendIcon, Videocam as VideocamIcon } from '@mui/icons-material';
 import { ButtonGroup, Divider, Grid, IconButton, InputBase } from '@mui/material';
 import { Participant } from '../../lib/Client';
 import { localize } from '../../lib/i18n';
@@ -7,6 +7,8 @@ import { localize } from '../../lib/i18n';
 export default function MessageTextbox(props: {
   participant?: Participant;
   disabled?: boolean;
+  videoCallDisabled?: boolean;
+  onVideoCall?: () => void;
 }) {
   const [messageBoxValue, setMessageBoxValue] = useState<string>('');
   const sendMessage = () => {
@@ -55,11 +57,14 @@ export default function MessageTextbox(props: {
       <ButtonGroup variant="text" aria-label="text button group" sx={{ bgcolor: 'Background.paper' }}>
         <IconButton color="primary" aria-label="upload picture" component="label" disabled={props.disabled}>
           <input ref={pictureInputRef} hidden accept="image/*" type="file" onChange={sendPicture} />
-          <InsertPhoto />
+          <InsertPhotoIcon />
         </IconButton>
         <IconButton color="primary" aria-label="upload file" component="label" disabled={props.disabled}>
           <input ref={fileAttachmentInputRef} hidden accept="*/*" type="file" onChange={sendFile} />
           <AttachFile />
+        </IconButton>
+        <IconButton color="primary" aria-label="video" component="label" disabled={props.disabled || !props.participant || props.videoCallDisabled} onClick={props.onVideoCall}>
+          <VideocamIcon />
         </IconButton>
       </ButtonGroup>
       <Divider />
