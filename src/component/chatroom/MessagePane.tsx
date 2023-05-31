@@ -1,5 +1,5 @@
 import React from 'react';
-import { Divider, List, Paper, Typography } from '@mui/material';
+import { List, Paper, Typography } from '@mui/material';
 import { ChatMessage, FileAttachmentMessage, MemberJoinedMessage, MemberLeftMessage, Participant, PictureMessage, TextMessage, TimestampedMessage } from '../../lib/Client';
 import { User } from '../../lib/User';
 import { localize } from '../../lib/i18n';
@@ -23,7 +23,6 @@ function TimeDividerItem(props: {
           {props.children}
         </Typography>
       </li>
-      <Divider component="li" />
     </>
   );
 }

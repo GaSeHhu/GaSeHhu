@@ -1,8 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { AttachFile, InsertPhoto as InsertPhotoIcon, Send as SendIcon, Videocam as VideocamIcon } from '@mui/icons-material';
+import { AttachFile, InsertPhoto as InsertPhotoIcon, Send as SendIcon, TagFaces as TagFacesIcon, Videocam as VideocamIcon } from '@mui/icons-material';
 import { ButtonGroup, Divider, Grid, IconButton, InputBase } from '@mui/material';
 import { Participant } from '../../lib/Client';
 import { localize } from '../../lib/i18n';
+import EmojiPicker from './EmojiPicker';
 
 export default function MessageTextbox(props: {
   participant?: Participant;
@@ -16,6 +17,20 @@ export default function MessageTextbox(props: {
       props.participant.sendText(messageBoxValue);
       setMessageBoxValue('');
     }
+  };
+
+  const messageBoxInputRef = useRef<HTMLInputElement>(null);
+
+  const [openEmojiPicker, setOpenEmojiPicker] = useState<boolean>(false);
+  const [emojiPickerAnchorEl, setEmojiPickerAnchorEl] = useState<HTMLElement>();
+  const appendEmoji = (emojiNative: string) => {
+    setMessageBoxValue(prev => {
+      const pos = messageBoxInputRef.current?.selectionStart;
+      if (pos) {
+        return prev.substring(0, pos) + emojiNative + prev.substring(pos);
+      }
+      return prev + emojiNative;
+    });
   };
 
   const pictureInputRef = useRef<HTMLInputElement>(null);
@@ -55,6 +70,17 @@ export default function MessageTextbox(props: {
   return (
     <>
       <ButtonGroup variant="text" aria-label="text button group" sx={{ bgcolor: 'Background.paper' }}>
+        <EmojiPicker open={openEmojiPicker} anchorEl={emojiPickerAnchorEl} onEmojiSelect={emoji => {
+          setOpenEmojiPicker(false);
+          appendEmoji(emoji.native);
+          messageBoxInputRef.current?.focus();
+        }}/>
+        <IconButton color="primary" aria-label="emoji" component="label" disabled={props.disabled} onClick={e => {
+          setOpenEmojiPicker(prev => !prev);
+          setEmojiPickerAnchorEl(e.currentTarget);
+        }}>
+          <TagFacesIcon />
+        </IconButton>
         <IconButton color="primary" aria-label="upload picture" component="label" disabled={props.disabled}>
           <input ref={pictureInputRef} hidden accept="image/*" type="file" onChange={sendPicture} />
           <InsertPhotoIcon />
@@ -72,6 +98,7 @@ export default function MessageTextbox(props: {
         sx={{ p: '2px 4px 8px 4px', display: 'flex', alignItems: 'center', width: '100%', bgcolor: 'background.paper' }}
       >
         <InputBase
+          inputRef={messageBoxInputRef}
           sx={{ ml: 1, flex: 1 }}
           autoFocus
           placeholder={localize('messageBoxPlaceholder')}

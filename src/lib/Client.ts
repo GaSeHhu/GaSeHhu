@@ -389,7 +389,9 @@ export class Guest extends Participant {
   }
 
   private establishHostConnection() {
-    const hostConnection = this.peer.connect(this.options.room.roomId);
+    const hostConnection = this.peer.connect(this.options.room.roomId, {
+      serialization: 'json',
+    });
     hostConnection.on('open', () => {
       this.emit('ready');
       const greetings: HelloMessage = {

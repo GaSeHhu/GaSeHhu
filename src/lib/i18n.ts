@@ -184,12 +184,16 @@ const localizedStrings: AllStringMappings = {
   },
 };
 
+export function getPreferredLocale(): Locale {
+  return getLocale(getQueryParam('lang') ?? navigator.language) ?? Locale.EN;
+}
+
 export function localize(stringId: SimpleStringId, locale?: Locale): string {
-  const localeChosen = locale ?? getLocale(getQueryParam('lang') ?? navigator.language) ?? Locale.EN;
+  const localeChosen = locale ?? getPreferredLocale();
   return localizedStrings[stringId][localeChosen];
 };
 
 export function localizeFn<T extends ComplexStringId>(stringId: T, locale?: Locale): ComplexStringIdTypes[T] {
-  const localeChosen = locale ?? getLocale(getQueryParam('lang') ?? navigator.language) ?? Locale.EN;
+  const localeChosen = locale ?? getPreferredLocale();
   return localizedStrings[stringId][localeChosen] as ComplexStringIdTypes[T];
 }
